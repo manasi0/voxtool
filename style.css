@@ -1,0 +1,22 @@
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { display: flex; background: #14171c; color: #d8dae0; font: 14px/1.4 system-ui, sans-serif; }
+
+#panel { width: 400px; max-width: 45vw; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: #1c2027; border-right: 1px solid #2c313a; }
+#panel h1 { margin: 0 0 4px; font-size: 18px; }
+#panel label { font-size: 12px; color: #9aa0ac; }
+
+select, textarea, button { font: inherit; color: inherit; background: #262b34; border: 1px solid #3a404b; border-radius: 4px; }
+select, button { padding: 6px 10px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { background: #323945; }
+button:disabled { opacity: 0.5; cursor: default; }
+textarea { flex: 1; min-height: 160px; padding: 8px; resize: none; font: 13px/1.4 ui-monospace, Consolas, monospace; tab-size: 2; white-space: pre; }
+
+.buttons { display: flex; gap: 8px; }
+#status { margin: 0; color: #9aa0ac; font-size: 12px; white-space: pre-wrap; }
+#error { margin: 0; color: #ff8a80; white-space: pre-wrap; font: 13px/1.4 system-ui, sans-serif; }
+#error:empty { display: none; }
+
+#view { flex: 1; min-width: 0; position: relative; }
+#view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

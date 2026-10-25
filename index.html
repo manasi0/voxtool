@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>VoxTool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <!-- OrbitControls imports the bare name "three"; this points it at the vendored copy. -->
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+</head>
+<body>
+  <aside id="panel">
+    <h1>VoxTool</h1>
+    <label for="recipe-list">Recipe</label>
+    <select id="recipe-list"></select>
+    <label for="recipe">Recipe text (edit freely)</label>
+    <textarea id="recipe" spellcheck="false"></textarea>
+    <div class="buttons">
+      <button id="run">Run</button>
+      <button id="download" disabled>Download .vox</button>
+    </div>
+    <pre id="status"></pre>
+    <pre id="error" role="alert"></pre>
+  </aside>
+  <main id="view"></main>
+  <script type="module" src="src/editor.js"></script>
+</body>
+</html>
