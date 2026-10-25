@@ -81,6 +81,16 @@ export class Model {
         }
   }
 
+  // Builds a model from vox_io.readVox output. A .vox carries its own colours (not palette.json),
+  // so the model gets a palette of 255 entries named colour_1 .. colour_255, in file order.
+  static fromVoxData(data, scale = 0.025) {
+    const palette = {};
+    for (let i = 1; i <= 255; i++) palette[`colour_${i}`] = rgbaToHex(data.palette[i]);
+    const model = new Model(data.w, data.h, data.d, scale, palette);
+    for (const v of data.voxels) model.set(v.x, v.y, v.z, v.i);
+    return model;
+  }
+
   // Real-world size in metres.
   sizeMetres() {
     return { x: this.w * this.scale, y: this.h * this.scale, z: this.d * this.scale };
@@ -101,4 +111,8 @@ export function hexToRgba(hex) {
   if (!m) throw new Error(`Bad colour "${hex}" (expected #RRGGBB).`);
   const n = parseInt(m[1], 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255];
+}
+
+export function rgbaToHex([r, g, b]) {
+  return "#" + [r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("").toUpperCase();
 }

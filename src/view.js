@@ -51,6 +51,9 @@ export function createView(container) {
     // Group voxels by colour, then make one InstancedMesh for each colour.
     const byColour = new Map();
     model.forEachVoxel((x, y, z, i) => {
+      // Skip voxels buried inside the model: all six neighbours filled means no face can be seen.
+      if (model.get(x - 1, y, z) && model.get(x + 1, y, z) && model.get(x, y - 1, z) &&
+          model.get(x, y + 1, z) && model.get(x, y, z - 1) && model.get(x, y, z + 1)) return;
       if (!byColour.has(i)) byColour.set(i, []);
       byColour.get(i).push(x, y, z);
     });
@@ -79,11 +82,23 @@ export function createView(container) {
     content.add(box);
     scene.add(content);
 
-    // Aim the camera at the model's centre from front-right-above.
-    const centre = new THREE.Vector3(width / 2, height / 2, depth / 2);
-    const distance = Math.max(width, height, depth) * 2.4 + 0.1;
+    centre.set(width / 2, height / 2, depth / 2);
+    distance = Math.max(width, height, depth) * 2.4 + 0.1;
+    setView("reset");
+  }
+
+  // Aim the camera at the model's centre from a named direction (Godot axes: front = +z, side = +x, top = +y).
+  const directions = {
+    reset: [0.7, 0.5, 1],
+    front: [0, 0, 1],
+    side: [1, 0, 0],
+    top: [0, 1, 0.0001], // tiny z offset: looking straight down has no defined "up" otherwise
+  };
+  const centre = new THREE.Vector3();
+  let distance = 1;
+  function setView(name) {
     controls.target.copy(centre);
-    camera.position.copy(centre).add(new THREE.Vector3(0.7, 0.5, 1).normalize().multiplyScalar(distance));
+    camera.position.copy(centre).add(new THREE.Vector3(...directions[name]).normalize().multiplyScalar(distance));
     controls.update();
   }
 
@@ -92,5 +107,5 @@ export function createView(container) {
     renderer.render(scene, camera);
   });
 
-  return { show };
+  return { show, setView };
 }

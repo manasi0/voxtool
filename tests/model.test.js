@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Model, RecipeError } from "../src/model.js";
-import { palette } from "./helpers.js";
+import { palette, build } from "./helpers.js";
+import { readVox, writeVox } from "../src/vox_io.js";
 
 test("set / get / clear / count", () => {
   const m = new Model(3, 4, 5, 0.025, palette);
@@ -41,4 +42,17 @@ test("size in metres", () => {
   const m = new Model(10, 14, 5, 0.025, palette);
   const s = m.sizeMetres();
   assert.ok(Math.abs(s.x - 0.25) < 1e-9 && Math.abs(s.y - 0.35) < 1e-9 && Math.abs(s.z - 0.125) < 1e-9);
+});
+
+test("fromVoxData rebuilds a model from a written .vox, keeping voxels, colours and size", () => {
+  const original = build('model(4, 3, 2, 0.05); box(0,0,0,2,1,1,"wall"); box(3,2,1,1,1,1,"status_green");');
+  const loaded = Model.fromVoxData(readVox(writeVox(original.toVoxData())));
+  assert.deepEqual([loaded.w, loaded.h, loaded.d], [4, 3, 2]);
+  assert.equal(loaded.count(), original.count());
+  const colourOf = (m, x, y, z) => m.palette[m.names[m.get(x, y, z) - 1]];
+  assert.equal(colourOf(loaded, 1, 0, 0), palette.wall);
+  assert.equal(colourOf(loaded, 3, 2, 1), palette.status_green);
+  assert.equal(loaded.get(2, 0, 0), 0);
+  // Saving the loaded model again gives the same file.
+  assert.deepEqual(writeVox(loaded.toVoxData()), writeVox(original.toVoxData()));
 });
