@@ -1,6 +1,6 @@
 # VoxTool
 
-A small web tool for making voxel props for **Drop Not Allowed**. Write a recipe (or pick a built-in one), preview it in 3D, and download a `.vox` file that opens in MagicaVoxel. Everything runs in the browser; nothing to install. See `SPEC.md` for the full plan (this is **Phase 1**).
+A small web tool for making voxel props for **Drop Not Allowed**. Write a recipe (or pick a built-in one), preview it in 3D, and download a `.vox` file that opens in MagicaVoxel. Everything runs in the browser; nothing to install. See `SPEC.md` for the full plan (Phases 1 and 2 are built).
 
 ## Using it
 
@@ -9,6 +9,7 @@ A small web tool for making voxel props for **Drop Not Allowed**. Write a recipe
 3. Press **Run** (or Ctrl+Enter in the box). The model appears on the right; drag to orbit, scroll to zoom. Mistakes are shown under the box with a line number.
 4. **Edit by hand** and Run again as often as you like.
 5. Press **Download .vox**, then open it in MagicaVoxel.
+6. To look at an existing `.vox` (for example one saved by MagicaVoxel), press **Open .vox** or drag the file onto the page. Use Reset view / Front / Side / Top for quick angles. The scale box under the 3D view sets metres per voxel; the bar shows the real size and the scale to use when importing into Godot.
 
 ### Recipe helpers
 

@@ -19,10 +19,30 @@
       <button id="run">Run</button>
       <button id="download" disabled>Download .vox</button>
     </div>
-    <pre id="status"></pre>
     <pre id="error" role="alert"></pre>
   </aside>
-  <main id="view"></main>
+  <main id="centre">
+    <div id="toolbar">
+      <button id="open">Open .vox</button>
+      <input id="file" type="file" accept=".vox" hidden>
+      <span class="sep"></span>
+      <button data-view="reset">Reset view</button>
+      <button data-view="front">Front</button>
+      <button data-view="side">Side</button>
+      <button data-view="top">Top</button>
+    </div>
+    <div id="view"></div>
+    <div id="statusbar">
+      <span id="size">No model yet</span>
+      <label>Scale <input id="scale" type="number" step="any" min="0.0001" value="0.025"> m/voxel</label>
+      <span id="godot"></span>
+    </div>
+    <div id="drop">Drop a .vox file to open it</div>
+  </main>
+  <aside id="colours">
+    <h2>Colours</h2>
+    <ul id="colour-list"></ul>
+  </aside>
   <script type="module" src="src/editor.js"></script>
 </body>
 </html>

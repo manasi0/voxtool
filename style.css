@@ -18,5 +18,22 @@ textarea { flex: 1; min-height: 160px; padding: 8px; resize: none; font: 13px/1.
 #error { margin: 0; color: #ff8a80; white-space: pre-wrap; font: 13px/1.4 system-ui, sans-serif; }
 #error:empty { display: none; }
 
-#view { flex: 1; min-width: 0; position: relative; }
+#centre { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+#toolbar, #statusbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #1c2027; }
+#toolbar { border-bottom: 1px solid #2c313a; }
+#statusbar { border-top: 1px solid #2c313a; color: #9aa0ac; font-size: 12px; flex-wrap: wrap; }
+#toolbar .sep { width: 1px; align-self: stretch; background: #2c313a; margin: 0 4px; }
+#scale { width: 80px; padding: 3px 6px; font: inherit; color: inherit; background: #262b34; border: 1px solid #3a404b; border-radius: 4px; }
+#godot { margin-left: auto; color: #d8dae0; }
+#drop { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 22px; background: rgba(20, 23, 28, 0.85); border: 3px dashed #6a7080; pointer-events: none; }
+body.dragging #drop { display: flex; }
+
+#colours { width: 200px; padding: 12px; overflow-y: auto; background: #1c2027; border-left: 1px solid #2c313a; }
+#colours h2 { margin: 0 0 8px; font-size: 14px; }
+#colour-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+#colour-list li { display: flex; align-items: center; gap: 8px; }
+#colour-list .swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #3a404b; flex: none; }
+#colour-list .count { margin-left: auto; color: #9aa0ac; }
+
+#view { flex: 1; min-height: 0; position: relative; }
 #view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
