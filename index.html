@@ -23,26 +23,91 @@
   </aside>
   <main id="centre">
     <div id="toolbar">
+      <button id="new">New</button>
       <button id="open">Open .vox</button>
       <input id="file" type="file" accept=".vox" hidden>
+      <span class="sep"></span>
+      <button data-tool="add" title="Add (A)">Add</button>
+      <button data-tool="erase" title="Erase (E)">Erase</button>
+      <button data-tool="paint" title="Paint (P)">Paint</button>
+      <button data-tool="eyedropper" title="Eyedropper (I)">Eyedropper</button>
+      <button data-tool="box" title="Box fill (B)">Box fill</button>
+      <button data-tool="orbit" title="Left-drag orbits (O)">Orbit</button>
+      <label id="extrude-label" title="How many voxels the box is extruded from the face">Extrude <input id="extrude" type="number" min="1" max="256" step="1" value="1"></label>
+      <label title="Mirror X (M)"><input id="mirror" type="checkbox"> Mirror X</label>
+      <span class="sep"></span>
+      <button id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
+      <button id="redo" title="Redo (Ctrl+Y)" disabled>Redo</button>
       <span class="sep"></span>
       <button data-view="reset">Reset view</button>
       <button data-view="front">Front</button>
       <button data-view="side">Side</button>
       <button data-view="top">Top</button>
+      <button id="help-button" title="Help (?)">?</button>
+    </div>
+    <div id="slicebar">
+      <label for="slice">Slice</label>
+      <input id="slice" type="range" min="0" max="0" value="0">
+      <span id="slice-label">all layers</span>
     </div>
     <div id="view"></div>
     <div id="statusbar">
       <span id="size">No model yet</span>
       <label>Scale <input id="scale" type="number" step="any" min="0.0001" value="0.025"> m/voxel</label>
+      <span id="cursor"></span>
+      <span id="autosave"></span>
       <span id="godot"></span>
     </div>
     <div id="drop">Drop a .vox file to open it</div>
   </main>
   <aside id="colours">
-    <h2>Colours</h2>
+    <h2>Palette</h2>
     <ul id="colour-list"></ul>
   </aside>
+  <dialog id="new-dialog">
+    <form method="dialog" id="new-form">
+      <h2>New model</h2>
+      <p>Size in voxels (1 to 256 each) and metres per voxel.</p>
+      <label>Width (x) <input id="new-w" type="number" min="1" max="256" step="1" value="16"></label>
+      <label>Height (y) <input id="new-h" type="number" min="1" max="256" step="1" value="16"></label>
+      <label>Depth (z) <input id="new-d" type="number" min="1" max="256" step="1" value="16"></label>
+      <label>Scale <input id="new-scale" type="number" min="0.0001" step="any" value="0.025"> m/voxel</label>
+      <p id="new-error" role="alert"></p>
+      <div class="buttons"><button value="ok">Create</button><button value="cancel" formnovalidate>Cancel</button></div>
+    </form>
+  </dialog>
+  <dialog id="help-dialog">
+    <h2>Help</h2>
+    <h3>Tools</h3>
+    <p>Left mouse uses the current tool. <b>Right-drag</b> orbits, <b>middle-drag</b> pans, <b>wheel</b> zooms (or pick the Orbit tool to orbit with the left button).</p>
+    <table>
+      <tr><td><kbd>A</kbd></td><td>Add: click or drag to place voxels on the face under the mouse</td></tr>
+      <tr><td><kbd>E</kbd></td><td>Erase: click or drag to remove voxels</td></tr>
+      <tr><td><kbd>P</kbd></td><td>Paint: recolour existing voxels</td></tr>
+      <tr><td><kbd>I</kbd></td><td>Eyedropper: pick the colour of a voxel</td></tr>
+      <tr><td><kbd>B</kbd></td><td>Box fill: drag a rectangle on a face; the Extrude field sets how far it sticks out</td></tr>
+      <tr><td><kbd>O</kbd></td><td>Orbit tool</td></tr>
+      <tr><td><kbd>M</kbd></td><td>Mirror X on/off (edits are repeated on the other side)</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Slice one layer down / up</td></tr>
+      <tr><td><kbd>Ctrl+Z</kbd></td><td>Undo (at least 100 steps; running a recipe is one step)</td></tr>
+      <tr><td><kbd>Ctrl+Y</kbd> / <kbd>Ctrl+Shift+Z</kbd></td><td>Redo</td></tr>
+      <tr><td><kbd>Ctrl+S</kbd></td><td>Download .vox</td></tr>
+      <tr><td><kbd>Ctrl+Enter</kbd></td><td>Run the recipe (inside the recipe box)</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Cancel a box drag</td></tr>
+    </table>
+    <p>The Slice slider hides everything above the chosen layer (y) so you can edit inner layers. The page saves your model and recipe in this browser automatically; <b>New</b> clears that.</p>
+    <h3>Recipe helpers</h3>
+    <pre>model(w, h, d, scale)                 start a model (scale = metres per voxel)
+box(x, y, z, w, h, d, "colour")
+hollow_box(x, y, z, w, h, d, "colour", wall = 1)
+cylinder(x, y, z, radius, length, "colour", axis = "y")
+line(x1, y1, z1, x2, y2, z2, "colour")
+remove(x, y, z, w, h, d)              cut a hole
+paint(x, y, z, w, h, d, "colour")     recolour existing voxels only
+mirror_x()                            copy the left half onto the right</pre>
+    <p>Axes: x = right, y = up, z = toward the viewer. Colour names come from palette.json. Loops and variables are normal JavaScript.</p>
+    <form method="dialog"><button>Close</button></form>
+  </dialog>
   <script type="module" src="src/editor.js"></script>
 </body>
 </html>

@@ -19,6 +19,44 @@ export function createView(container) {
   const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 100);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  // Left button belongs to the edit tools; right button orbits, middle pans. The Orbit tool gives the left button back.
+  controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+  renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+  function setLeftOrbit(on) {
+    controls.mouseButtons.LEFT = on ? THREE.MOUSE.ROTATE : null;
+  }
+
+  // Hover outline and box-fill preview. They live outside `content` so redrawing the model keeps them.
+  const hoverBox = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)),
+    new THREE.LineBasicMaterial({ color: 0xffd34d, depthTest: false })
+  );
+  hoverBox.renderOrder = 2;
+  hoverBox.visible = false;
+  scene.add(hoverBox);
+  const previewBox = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.35, depthWrite: false })
+  );
+  previewBox.visible = false;
+  scene.add(previewBox);
+
+  // Puts a unit box over the cells min..max (inclusive, voxel coordinates), or hides it when min is null.
+  function placeBox(box, min, max, scale) {
+    box.visible = !!min;
+    if (!min) return;
+    box.scale.set((max[0] - min[0] + 1) * scale * 1.01, (max[1] - min[1] + 1) * scale * 1.01, (max[2] - min[2] + 1) * scale * 1.01);
+    box.position.set((min[0] + max[0] + 1) / 2 * scale, (min[1] + max[1] + 1) / 2 * scale, (min[2] + max[2] + 1) / 2 * scale);
+  }
+
+  // Ray under a mouse position, in voxel units (metres divided by scale), for src/pick.js.
+  const raycaster = new THREE.Raycaster();
+  function ray(clientX, clientY, scale) {
+    const r = renderer.domElement.getBoundingClientRect();
+    raycaster.setFromCamera(new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1), camera);
+    const o = raycaster.ray.origin, d = raycaster.ray.direction;
+    return { origin: { x: o.x / scale, y: o.y / scale, z: o.z / scale }, dir: { x: d.x, y: d.y, z: d.z } };
+  }
 
   let content = null; // everything belonging to the current model, replaced on each show()
 
@@ -41,9 +79,11 @@ export function createView(container) {
     content = null;
   }
 
-  // Draws a Model (see src/model.js).
-  function show(model) {
+  // Draws a Model (see src/model.js). maxY hides every voxel above that layer (slice view; null = show all).
+  // The camera only jumps back to the default view when `reset` is true (a new model), not after each edit.
+  function show(model, { maxY = null, reset = false } = {}) {
     clearContent();
+    const at = (x, y, z) => (maxY !== null && y > maxY ? 0 : model.get(x, y, z));
     content = new THREE.Group();
     const s = model.scale;
     const width = model.w * s, height = model.h * s, depth = model.d * s;
@@ -51,9 +91,10 @@ export function createView(container) {
     // Group voxels by colour, then make one InstancedMesh for each colour.
     const byColour = new Map();
     model.forEachVoxel((x, y, z, i) => {
+      if (maxY !== null && y > maxY) return;
       // Skip voxels buried inside the model: all six neighbours filled means no face can be seen.
-      if (model.get(x - 1, y, z) && model.get(x + 1, y, z) && model.get(x, y - 1, z) &&
-          model.get(x, y + 1, z) && model.get(x, y, z - 1) && model.get(x, y, z + 1)) return;
+      if (at(x - 1, y, z) && at(x + 1, y, z) && at(x, y - 1, z) &&
+          at(x, y + 1, z) && at(x, y, z - 1) && at(x, y, z + 1)) return;
       if (!byColour.has(i)) byColour.set(i, []);
       byColour.get(i).push(x, y, z);
     });
@@ -82,9 +123,11 @@ export function createView(container) {
     content.add(box);
     scene.add(content);
 
-    centre.set(width / 2, height / 2, depth / 2);
-    distance = Math.max(width, height, depth) * 2.4 + 0.1;
-    setView("reset");
+    if (reset) {
+      centre.set(width / 2, height / 2, depth / 2);
+      distance = Math.max(width, height, depth) * 2.4 + 0.1;
+      setView("reset");
+    }
   }
 
   // Aim the camera at the model's centre from a named direction (Godot axes: front = +z, side = +x, top = +y).
@@ -107,5 +150,10 @@ export function createView(container) {
     renderer.render(scene, camera);
   });
 
-  return { show, setView };
+  return {
+    show, setView, setLeftOrbit, ray,
+    canvas: renderer.domElement,
+    setHover: (min, max, scale) => placeBox(hoverBox, min, max, scale),
+    setPreview: (min, max, scale) => placeBox(previewBox, min, max, scale),
+  };
 }

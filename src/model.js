@@ -83,9 +83,11 @@ export class Model {
 
   // Builds a model from vox_io.readVox output. A .vox carries its own colours (not palette.json),
   // so the model gets a palette of 255 entries named colour_1 .. colour_255, in file order.
-  static fromVoxData(data, scale = 0.025) {
+  // Pass `named` (palette.json) to keep colour names for files this tool wrote; indices match its order.
+  static fromVoxData(data, scale = 0.025, named = null) {
     const palette = {};
-    for (let i = 1; i <= 255; i++) palette[`colour_${i}`] = rgbaToHex(data.palette[i]);
+    if (named) Object.assign(palette, named);
+    else for (let i = 1; i <= 255; i++) palette[`colour_${i}`] = rgbaToHex(data.palette[i]);
     const model = new Model(data.w, data.h, data.d, scale, palette);
     for (const v of data.voxels) model.set(v.x, v.y, v.z, v.i);
     return model;

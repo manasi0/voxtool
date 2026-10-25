@@ -122,3 +122,12 @@ test("bad input gives readable errors", () => {
   assert.throws(() => writeVox({ w: 2, h: 2, d: 2, voxels: [{ x: 2, y: 0, z: 0, i: 1 }], palette: [] }), /outside/);
   assert.throws(() => writeVox({ w: 2, h: 2, d: 2, voxels: [{ x: 0, y: 0, z: 0, i: 0 }], palette: [] }), /index/);
 });
+
+test("clock_in.vox in the repo opens and matches the clock_in recipe voxel for voxel", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { Model } = await import("../src/model.js");
+  const { dump, palette } = await import("./helpers.js");
+  const recipe = readFileSync(new URL("../recipes/clock_in.js", import.meta.url), "utf8");
+  const fromFile = Model.fromVoxData(readVox(readFileSync(new URL("../clock_in.vox", import.meta.url))), 0.025, palette);
+  assert.deepEqual(dump(fromFile), dump(build(recipe)));
+});

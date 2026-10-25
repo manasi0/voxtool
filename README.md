@@ -1,6 +1,6 @@
 # VoxTool
 
-A small web tool for making voxel props for **Drop Not Allowed**. Write a recipe (or pick a built-in one), preview it in 3D, and download a `.vox` file that opens in MagicaVoxel. Everything runs in the browser; nothing to install. See `SPEC.md` for the full plan (Phases 1 and 2 are built).
+A small web tool for making voxel props for **Drop Not Allowed**. Write a recipe (or pick a built-in one), preview it in 3D, and download a `.vox` file that opens in MagicaVoxel. Everything runs in the browser; nothing to install. See `SPEC.md` for the full plan (Phases 1 to 3 are built).
 
 ## Using it
 
@@ -10,6 +10,24 @@ A small web tool for making voxel props for **Drop Not Allowed**. Write a recipe
 4. **Edit by hand** and Run again as often as you like.
 5. Press **Download .vox**, then open it in MagicaVoxel.
 6. To look at an existing `.vox` (for example one saved by MagicaVoxel), press **Open .vox** or drag the file onto the page. Use Reset view / Front / Side / Top for quick angles. The scale box under the 3D view sets metres per voxel; the bar shows the real size and the scale to use when importing into Godot.
+
+### Editing by hand
+
+Left mouse uses the current tool; **right-drag** orbits, middle-drag pans, the wheel zooms (or pick **Orbit** to orbit with the left button). Press **?** on the page for the full list.
+
+| Key | Tool |
+|---|---|
+| A | **Add**: click or drag to place voxels on the face under the mouse |
+| E | **Erase** |
+| P | **Paint**: recolour existing voxels |
+| I | **Eyedropper**: pick a voxel's colour |
+| B | **Box fill**: drag a rectangle on a face; the *Extrude* field says how far it sticks out |
+| M | **Mirror X** on/off |
+| [ ] | Slice one layer down / up (the slider hides everything above a layer) |
+| Ctrl+Z / Ctrl+Y | Undo / redo (200 steps; running a recipe or opening a file is one step) |
+| Ctrl+S | Download .vox |
+
+Pick a colour in the palette on the right. **New** asks for a size and scale and starts an empty model. Your model and recipe text are saved in this browser automatically (localStorage); **New** clears that. Running a recipe replaces the model, including hand edits (Ctrl+Z brings them back).
 
 ### Recipe helpers
 
