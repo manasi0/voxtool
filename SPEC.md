@@ -1,37 +1,45 @@
 # VoxTool: spec
 
-A small offline tool for making voxel props for **Drop Not Allowed** (Godot 4.7).
-Two parts: a Python generator (recipe file → `.vox`) and a three.js editor (open, edit, save `.vox`).
+A small **web** tool for making voxel props for **Drop Not Allowed** (Godot 4.7).
+Everything runs in the browser: write a recipe or edit by hand, preview in 3D, download a `.vox`.
 Output must open in **MagicaVoxel**, which is where props are exported to OBJ for Godot.
 
 This repo is separate from the game. Nothing here is ever copied into the game project.
 
 ## Ground rules
 
-- Works fully offline after the first `npm install`. No CDNs, no online APIs, no AI calls.
-- The user does not use the command line. Every action has a double-click `.bat` launcher (Windows).
-- Python 3, standard library only (no pip packages). Use `unittest` for tests.
-- Editor: Vite + vanilla JavaScript + three.js (npm). No framework.
+- **Runs entirely in the browser.** The user installs nothing on their PC. No Python, no Node, no `.bat` files for the user.
+- **Hosted on GitHub Pages**, served straight from the `main` branch root. **No build step**: plain HTML, CSS and JavaScript ES modules.
+- three.js and OrbitControls are **vendored** into `vendor/` (copied files, pinned version), not loaded from a CDN, so the page keeps working if a CDN changes.
+- No backend, no online APIs, no AI calls from the page.
+- Node may be used **only by Claude Code** for automated tests (`node --test`), never needed by the user.
 - Keep code simple and commented; the user reads and edits recipes by hand.
-- Work in phases. Finish and test one phase, then stop and summarise before the next.
+- Work in phases. Finish and test one phase, commit and push, then stop and summarise.
 
 ## Folder layout
 
 ```
 voxtool/
 ├─ SPEC.md
-├─ palette.json            shared palette (generator + editor)
-├─ generator/
-│  ├─ voxgen.py            CLI: python voxgen.py recipes/clock_in.py
-│  ├─ vox_io.py            .vox read/write
-│  ├─ shapes.py            helper functions used by recipes
-│  └─ tests/
-├─ recipes/                one .py file per prop
-├─ output/                 generated .vox files
-├─ editor/                 Vite project
-├─ make_vox.bat            drag a recipe onto it → .vox in output/
-└─ start_editor.bat        starts the editor and opens the browser
+├─ README.md
+├─ index.html              the app
+├─ style.css
+├─ palette.json            shared palette
+├─ src/
+│  ├─ vox_io.js            .vox read/write (no DOM, testable in Node)
+│  ├─ model.js             voxel model: size, scale, set/get/clear
+│  ├─ shapes.js            helper functions used by recipes
+│  ├─ recipe_runner.js     runs recipe text against the helpers
+│  ├─ view.js              three.js scene, camera, rendering
+│  └─ editor.js            tools, undo/redo, UI wiring
+├─ recipes/
+│  ├─ index.json           list of built-in recipes (name, file)
+│  └─ clock_in.js
+├─ vendor/                 three.module.js, OrbitControls.js
+└─ tests/                  node --test files for vox_io, model, shapes, recipe_runner
 ```
+
+`src/vox_io.js`, `model.js`, `shapes.js` and `recipe_runner.js` must not touch the DOM, so they run in both the browser and Node tests.
 
 ## Palette (`palette.json`)
 
@@ -74,75 +82,85 @@ Index order in the .vox palette follows this list, starting at index 1.
 | floor_concrete | #4A4844 |
 | drone_white | #E6E6E2 |
 | drone_white_shade | #C8C8C4 |
+| status_green | #3E8A4A |
 
 Rule: a shade is one step darker of the same hue, never a different hue.
-Users add colours by editing this file; nothing else should need to change.
+Users add colours by editing this file on GitHub; nothing else should need to change.
 
 ## Coordinates and scale
 
 - Recipes and the editor use **Godot axes**: x = right, y = up, z = toward the viewer (front).
-- `vox_io.py` converts to MagicaVoxel's Z-up on write and back on read. Test this both ways.
-- Each recipe sets `SIZE = (x, y, z)` (max 256 per axis) and `SCALE` (metres per voxel, e.g. `0.025`).
-- After writing, `voxgen.py` prints the model's real size in metres and the uniform scale to use on the imported mesh in Godot.
+- `vox_io.js` converts to MagicaVoxel's Z-up on write and back on read. Test this both ways.
+- Each model has a size (max 256 per axis) and a **scale** in metres per voxel (default `0.025`).
+- The status bar shows real size in metres and the uniform scale to use on the imported mesh in Godot.
 
-## Phase 1: generator
+## Recipe format
 
-`vox_io.py`
-- Write MagicaVoxel `.vox` (version 150 or 200): `MAIN`, `SIZE`, `XYZI`, `RGBA` chunks.
-- Palette index 0 = empty. Fill unused palette slots with a neutral grey.
-- Read `.vox` back (used by tests and by `voxgen.py --info file.vox`).
+A recipe is plain JavaScript text that calls helpers. Example:
 
-`shapes.py`: a model object plus helpers. Colours are palette names.
+```js
+model(10, 14, 5, 0.025);             // size x, y, z and metres per voxel
+box(0, 0, 0, 10, 14, 4, "roof_metal");
+box(1, 6, 4, 8, 6, 1, "frame");
+box(2, 7, 4, 6, 4, 1, "glass_dark");
+box(3, 2, 4, 4, 1, 1, "sign");
+box(8, 12, 4, 1, 1, 1, "status_green");
+```
+
+Helpers (colours are palette names):
+- `model(w, h, d, scale)` starts a new model
 - `box(x, y, z, w, h, d, colour)`
-- `hollow_box(x, y, z, w, h, d, colour, wall=1)`
-- `cylinder(x, y, z, radius, length, colour, axis="y")`
+- `hollow_box(x, y, z, w, h, d, colour, wall = 1)`
+- `cylinder(x, y, z, radius, length, colour, axis = "y")`
 - `line(x1, y1, z1, x2, y2, z2, colour)`
 - `remove(x, y, z, w, h, d)` to cut holes
 - `paint(x, y, z, w, h, d, colour)` recolours only existing voxels
 - `mirror_x()` mirrors the left half onto the right
-- Clear errors for an unknown colour name or out-of-bounds shapes (say which line and why).
+- Loops and variables are allowed (it's JavaScript).
 
-`voxgen.py`
-- `python voxgen.py recipes/<name>.py` → `output/<name>.vox`
-- `--info file.vox` prints size, voxel count and colours used.
+Errors (unknown colour, out of bounds, syntax) are shown under the recipe box in plain words with the line number.
+The recipe runner exposes only these helpers to the recipe (run it with `new Function` and pass the helpers in; no access to the page).
 
-`make_vox.bat`: drag a recipe onto it; it runs voxgen and keeps the window open to show the result or error.
+## Phase 1: core + recipe page
 
-Example recipe `recipes/clock_in.py` (wall-mounted staff clock-in machine, about 0.25 × 0.35 × 0.12 m):
-body `roof_metal`, a front screen `glass_dark` with a 1-voxel `frame` border, a card slot `sign`, a small green status light (add `status_green` #3E8A4A to the palette), wall bracket on the back.
-
-Tests: write → read round trip (same voxels, same colours, axes correct); every helper; bad colour name error; out-of-bounds error.
-**Manual check for the user:** open `output/clock_in.vox` in MagicaVoxel; it must look upright, front facing the default camera, correct colours.
+- `palette.json`, `src/vox_io.js`, `src/model.js`, `src/shapes.js`, `src/recipe_runner.js`.
+- `vox_io.js`: write MagicaVoxel `.vox` (version 150 or 200): `MAIN`, `SIZE`, `XYZI`, `RGBA`. Palette index 0 = empty; fill unused slots with a neutral grey. Read `.vox` back too (including files saved by MagicaVoxel, which may contain extra chunks to skip).
+- `index.html`, minimal for now: a recipe text box, a **Run** button, a recipe dropdown filled from `recipes/index.json`, a **Download .vox** button, an error area, and a simple three.js preview (orbit, grid).
+- `recipes/clock_in.js`: wall-mounted staff clock-in machine, about 0.25 × 0.35 × 0.12 m at scale 0.025. Body `roof_metal`, front screen `glass_dark` with a 1-voxel `frame` border, card slot `sign`, small `status_green` light, wall bracket on the back.
+- Tests (`node --test`): write → read round trip (same voxels, colours, axes); every helper; unknown colour error; out-of-bounds error; recipe syntax error reported with a line number.
+- README: how to enable GitHub Pages (Settings > Pages > Deploy from a branch > `main` / root) and the page URL format.
 
 ## Phase 2: viewer
 
-- `start_editor.bat` runs the Vite dev server and opens the browser.
-- Open a `.vox` by file picker or drag-and-drop.
-- Render with one `InstancedMesh` per colour (or a merged greedy mesh), flat `MeshLambertMaterial`, simple hemisphere + directional light. Dark background close to the game's night look.
-- Orbit camera (OrbitControls), reset view button, front / side / top view buttons.
-- Grid floor and a thin bounding box. Status bar: size in voxels and in metres (scale input box, default 0.025).
+- Open a `.vox` by file picker or drag-and-drop onto the page.
+- Render with one `InstancedMesh` per colour (or a greedy mesh), flat `MeshLambertMaterial`, hemisphere + directional light, dark background close to the game's night look.
+- Orbit camera, reset view, front / side / top view buttons.
+- Grid floor and a thin bounding box.
+- Status bar: size in voxels and metres, scale input (default 0.025), Godot import scale.
+- Layout works on a laptop screen: recipe panel left, 3D view centre, palette right.
 
 ## Phase 3: editor
 
 - New model (enter size and scale).
 - Tools: **Add**, **Erase**, **Paint**, **Eyedropper**, **Box fill** (drag a rectangle on the current face, extrude by a number field).
-- Palette sidebar from `palette.json`, showing name + swatch; current colour highlighted.
-- Mirror X toggle (edits apply to both sides).
-- Slice view: slider to hide everything above a chosen y, so inner layers can be edited.
-- Undo / redo (Ctrl+Z / Ctrl+Y), at least 100 steps.
-- Save `.vox` (download), keeping palette indices the same as `palette.json`.
-- Keyboard shortcuts shown in a small help panel (?).
+- Palette sidebar from `palette.json`, name + swatch, current colour highlighted.
+- Mirror X toggle.
+- Slice view: slider hides everything above a chosen y, to edit inner layers.
+- Undo / redo (Ctrl+Z / Ctrl+Y), at least 100 steps. Running a recipe is one undo step.
 - Hover highlight shows which voxel or face will be edited.
+- Save `.vox` (download), palette indices matching `palette.json`.
+- **Autosave** the current model and recipe text to `localStorage` (wrap in try/catch; the page must work without it). A "New" button clears it.
+- Help panel (?) listing shortcuts and recipe helpers.
 
 ## Phase 4: nice to have (only if asked)
 
-- Load a recipe's output and show which recipe made it.
 - Export a PNG preview.
-- Remember the last opened file and camera.
+- Copy current model as a recipe (list of boxes) so hand edits can be saved as text.
+- Several models open as tabs.
 
 ## Done means
 
-- Tests pass.
-- `make_vox.bat` and `start_editor.bat` work by double-click on Windows.
-- A `.vox` saved by the editor opens correctly in MagicaVoxel, and a `.vox` from MagicaVoxel opens correctly in the editor.
-- Short `README.md`: how to make a recipe, run it, open and edit in the editor.
+- Tests pass in Node.
+- The GitHub Pages URL loads the app with no console errors.
+- A `.vox` downloaded from the app opens correctly in MagicaVoxel, and a `.vox` saved by MagicaVoxel opens correctly in the app.
+- README explains: pick or paste a recipe, Run, edit by hand, Download .vox.
